@@ -39,7 +39,8 @@ jobs:
             echo "RELEASE_APK_PATH=$(find . -name '*.apk')" >> $GITHUB_ENV # 將 APK 文件路徑寫入環境變數
             echo "RELEASE_APK=$(basename $(find . -name '*.apk'))" >> $GITHUB_ENV # 將 APK 文件名稱寫入環境變數
 
-      - name: Upload Artifact (Debug APK) # 上傳 APK 文件
+      # 上傳工作流中的檔案到運行紀錄中，以便在 GitHub UI 中查看下載，或是在其他工作流程中使用
+      - name: Upload Artifact (Debug APK)
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.DEBUG_APK }} # 上傳的文件名稱
