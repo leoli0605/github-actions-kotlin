@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - main # 當 main 分支有新的推送時觸發
+    tags:
+      - v* # 當有新的標籤時觸發
+  schedule:
+    - cron: '0 0 * * 0' # 每週日 00:00 UTC 時觸發 (台灣是 UTC+8，所以是每週日 08:00)
+  workflow_dispatch: # 手動觸發工作流程
 
 jobs:
   build:
@@ -27,5 +32,38 @@ jobs:
             # ./gradlew build # 執行 Gradle 構建命令
             ./gradlew assembleDebug # 執行 Gradle 構建命令
             ls -l app/build/outputs/apk/debug/ # 列出 APK 文件
+            echo "DEBUG_APK_PATH=$(find . -type f -name '*.apk')" >> $GITHUB_ENV # 將 APK 文件路徑寫入環境變數
+            echo "DEBUG_APK=$(basename ${{ env.DEBUG_APK_PATH }})" >> $GITHUB_ENV # 將 APK 文件名稱寫入環境變數
             ./gradlew assembleRelease # 執行 Gradle 構建命令
             ls -l app/build/outputs/apk/release/ # 列出 APK 文件
+            echo "RELEASE_APK_PATH=$(find . -type f -name '*.apk')" >> $GITHUB_ENV # 將 APK 文件路徑寫入環境變數
+            echo "RELEASE_APK=$(basename ${{ env.RELEASE_APK_PATH }})" >> $GITHUB_ENV # 將 APK 文件名稱寫入環境變數
+
+      - name: Upload Artifact (Debug APK)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.DEBUG_APK }} # 上傳的文件名稱
+          path: ${{ env.DEBUG_APK_PATH }} # 上傳的文件路徑
+
+      - name: Upload Artifact (Release APK)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.RELEASE_APK }} # 上傳的文件名稱
+          path: ${{ env.RELEASE_APK_PATH }} # 上傳的文件路徑
+
+      - name: Publish Release
+        # 當推送的標籤是以 refs/tags/v 開頭時執行
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: ncipollo/release-action@v1
+        env:
+          GITHUB_REF: ${{ github.ref }}
+        with:
+          allowUpdates: true
+          artifacts: "${{ env.DEBUG_APK_PATH }},${{ env.RELEASE_APK_PATH }}"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          prerelease: false
+          draft: false
+          name: Release ${GITHUB_REF#refs/tags/} APK # 發布的名稱
+          body: |
+            Release ${GITHUB_REF#refs/tags/} APK
+          tag: ${GITHUB_REF#refs/tags/}
