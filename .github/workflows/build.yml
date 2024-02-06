@@ -33,11 +33,11 @@ jobs:
             ./gradlew assembleDebug # 執行 Gradle 構建命令
             ls -l app/build/outputs/apk/debug/ # 列出 APK 文件
             echo "DEBUG_APK_PATH=$(find . -type f -name '*.apk')" >> $GITHUB_ENV # 將 APK 文件路徑寫入環境變數
-            echo "DEBUG_APK=$(basename ${{ env.DEBUG_APK_PATH }})" >> $GITHUB_ENV # 將 APK 文件名稱寫入環境變數
+            echo "DEBUG_APK=$(basename $(find . -type f -name '*.apk'))" >> $GITHUB_ENV # 將 APK 文件名稱寫入環境變數
             ./gradlew assembleRelease # 執行 Gradle 構建命令
             ls -l app/build/outputs/apk/release/ # 列出 APK 文件
             echo "RELEASE_APK_PATH=$(find . -type f -name '*.apk')" >> $GITHUB_ENV # 將 APK 文件路徑寫入環境變數
-            echo "RELEASE_APK=$(basename ${{ env.RELEASE_APK_PATH }})" >> $GITHUB_ENV # 將 APK 文件名稱寫入環境變數
+            echo "RELEASE_APK=$(basename $(find . -type f -name '*.apk'))" >> $GITHUB_ENV # 將 APK 文件名稱寫入環境變數
 
       - name: Upload Artifact (Debug APK)
         uses: actions/upload-artifact@v4
