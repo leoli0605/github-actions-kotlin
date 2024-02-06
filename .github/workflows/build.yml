@@ -1,5 +1,6 @@
 name: Build Kotlin Project
 
+# 觸發條件
 on:
   push:
     branches:
@@ -10,9 +11,9 @@ on:
     - cron: '0 0 * * 0' # 每週日 00:00 UTC 時觸發 (台灣是 UTC+8，所以是每週日 08:00)
   workflow_dispatch: # 手動觸發工作流程
 
-jobs:
-  build:
-    runs-on: ubuntu-latest # 運行工作流程的虛擬機器環境
+jobs: # 工作流程中的工作
+  build: # 工作流程名稱
+    runs-on: ubuntu-latest # 運行工作流程的虛擬機器環境 (ubuntu-latest, macos-latest, windows-latest)
 
     steps:
       - name: Checkout Repository
