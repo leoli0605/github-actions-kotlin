@@ -32,14 +32,14 @@ jobs:
             # ./gradlew build # 執行 Gradle 構建命令
             ./gradlew assembleDebug # 執行 Gradle 構建命令
             ls -l app/build/outputs/apk/debug/ # 列出 APK 文件
-            echo "DEBUG_APK_PATH=$(find . -type f -name '*.apk')" >> $GITHUB_ENV # 將 APK 文件路徑寫入環境變數
-            echo "DEBUG_APK=$(basename $(find . -type f -name '*.apk'))" >> $GITHUB_ENV # 將 APK 文件名稱寫入環境變數
+            echo "DEBUG_APK_PATH=$(find . -name '*.apk')" >> $GITHUB_ENV # 將 APK 文件路徑寫入環境變數
+            echo "DEBUG_APK=$(basename $(find . -name '*.apk'))" >> $GITHUB_ENV # 將 APK 文件名稱寫入環境變數
             ./gradlew assembleRelease # 執行 Gradle 構建命令
             ls -l app/build/outputs/apk/release/ # 列出 APK 文件
-            echo "RELEASE_APK_PATH=$(find . -type f -name '*.apk')" >> $GITHUB_ENV # 將 APK 文件路徑寫入環境變數
-            echo "RELEASE_APK=$(basename $(find . -type f -name '*.apk'))" >> $GITHUB_ENV # 將 APK 文件名稱寫入環境變數
+            echo "RELEASE_APK_PATH=$(find . -name '*.apk')" >> $GITHUB_ENV # 將 APK 文件路徑寫入環境變數
+            echo "RELEASE_APK=$(basename $(find . -name '*.apk'))" >> $GITHUB_ENV # 將 APK 文件名稱寫入環境變數
 
-      - name: Upload Artifact (Debug APK)
+      - name: Upload Artifact (Debug APK) # 上傳 APK 文件
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.DEBUG_APK }} # 上傳的文件名稱
