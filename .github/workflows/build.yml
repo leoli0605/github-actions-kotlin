@@ -60,15 +60,13 @@ jobs:
         # 當推送的標籤是以 refs/tags/v 開頭時執行
         if: startsWith(github.ref, 'refs/tags/v')
         uses: ncipollo/release-action@v1
-        env:
-          GITHUB_REF: ${{ github.ref }}
         with:
           allowUpdates: true
           artifacts: '${{ env.DEBUG_APK_PATH }},${{ env.RELEASE_APK_PATH }}'
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: false
           draft: false
-          name: Release ${GITHUB_REF#refs/tags/} APK # 發布的名稱
+          name: Release ${{ github.ref_name }} APK # 發布的名稱
           body: |
-            Release ${GITHUB_REF#refs/tags/} APK
-          tag: ${GITHUB_REF#refs/tags/}
+            Release ${{ github.ref_name }} APK
+          tag: ${{ github.ref_name }}
