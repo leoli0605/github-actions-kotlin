@@ -57,6 +57,17 @@ jobs: # 工作流程中的工作
           name: ${{ env.RELEASE_APK }} # 上傳的文件名稱
           path: ${{ env.RELEASE_APK_PATH }} # 上傳的文件路徑
 
+  Release: # 工作流程名稱
+    runs-on: ubuntu-latest # 運行工作流程的虛擬機器環境 (ubuntu-latest, macos-latest, windows-latest)
+    needs: build # 需要 build 工作流程執行完畢後才能執行
+
+    steps:
+      - name: Download All Artifacts (Debug APK, Release APK)
+        uses: actions/download-artifact@v4
+
+      - name: Display structure of downloaded files
+        run: ls -R
+
       - name: Publish Release
         # 當推送的標籤是以 refs/tags/v 開頭時執行
         if: startsWith(github.ref, 'refs/tags/v')
