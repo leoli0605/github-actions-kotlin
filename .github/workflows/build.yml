@@ -62,6 +62,7 @@ jobs: # 工作流程中的工作
     needs: build # 需要 build 工作流程執行完畢後才能執行
 
     steps:
+      # 將所有存在運行紀錄中的檔案下載到工作流程中，檔案會存在工作流程的工作目錄中
       - name: Download All Artifacts (Debug APK, Release APK)
         uses: actions/download-artifact@v4
 
@@ -74,7 +75,7 @@ jobs: # 工作流程中的工作
         uses: ncipollo/release-action@v1
         with:
           allowUpdates: true
-          artifacts: '${{ env.DEBUG_APK_PATH }},${{ env.RELEASE_APK_PATH }}'
+          artifacts: '${{ env.DEBUG_APK }},${{ env.RELEASE_APK }}'
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: false
           draft: false
