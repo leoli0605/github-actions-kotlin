@@ -2,87 +2,129 @@ name: Build Kotlin Project
 
 # 觸發條件
 on:
-  push:
-    branches:
-      - main # 當 main 分支有新的推送時觸發
-    tags:
-      - v* # 當有新的標籤時觸發
-  schedule:
-    - cron: '0 0 * * 0' # 每週日 00:00 UTC 時觸發 (台灣是 UTC+8，所以是每週日 08:00)
-  workflow_dispatch: # 手動觸發工作流程
+    push:
+        branches:
+            - main # 當 main 分支有新的推送時觸發
+        tags:
+            - v* # 當有新的標籤時觸發
+    schedule:
+        - cron: '0 0 * * 0' # 每週日 00:00 UTC 時觸發 (台灣是 UTC+8，所以是每週日 08:00)
+    workflow_dispatch: # 手動觸發工作流程
 
 jobs: # 工作流程中的工作
-  build: # 工作流程名稱
-    runs-on: ubuntu-latest # 運行工作流程的虛擬機器環境 (ubuntu-latest, macos-latest, windows-latest)
+    build: # 工作流程名稱
+        runs-on: ubuntu-latest # 運行工作流程的虛擬機器環境 (ubuntu-latest, macos-latest, windows-latest)
 
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4 # 簽出代碼
+        steps:
+            - name: Checkout Repository
+              uses: actions/checkout@v4 # 簽出代碼
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17' # 設置 JDK 版本
-          distribution: 'temurin'
+            - name: Set up JDK 17
+              uses: actions/setup-java@v4
+              with:
+                  java-version: '17' # 設置 JDK 版本
+                  distribution: 'temurin'
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x ./gradlew # 給予執行權限
+            - name: Setup Android SDK
+              uses: android-actions/setup-android@v3
 
-      - name: Build with Gradle
-        run: |
-          # ./gradlew build # 執行 Gradle 構建命令
+            - name: Grant execute permission for gradlew
+              run: chmod +x ./gradlew # 給予執行權限
 
-          ./gradlew assembleDebug # 執行 Gradle 構建命令
-          ls -l app/build/outputs/apk/debug/ # 列出 APK 文件
-          DEBUG_APK_FILE=$(find 'app/build/outputs/apk/debug/' -name '*.apk' | head -n 1)
-          echo "DEBUG_APK_PATH=$DEBUG_APK_FILE" >> $GITHUB_ENV # 將 APK 文件路徑寫入環境變數
-          echo "DEBUG_APK=$(basename $DEBUG_APK_FILE)" >> $GITHUB_ENV # 將 APK 文件名稱寫入環境變數
+            - name: Build with Gradle
+              run: |
+                  # ./gradlew build # 執行 Gradle 構建命令
 
-          ./gradlew assembleRelease # 執行 Gradle 構建命令
-          ls -l app/build/outputs/apk/release/ # 列出 APK 文件
-          RELEASE_APK_FILE=$(find 'app/build/outputs/apk/release/' -name '*.apk' | head -n 1)
-          echo "RELEASE_APK_PATH=$RELEASE_APK_FILE" >> $GITHUB_ENV # 將 APK 文件路徑寫入環境變數
-          echo "RELEASE_APK=$(basename $RELEASE_APK_FILE)" >> $GITHUB_ENV # 將 APK 文件名稱寫入環境變數
+                  ./gradlew assembleDebug # 執行 Gradle 構建命令
+                  ls -l app/build/outputs/apk/debug/ # 列出 APK 文件
+                  DEBUG_APK_FILE=$(find 'app/build/outputs/apk/debug/' -name '*.apk' | head -n 1)
+                  echo "DEBUG_APK_PATH=$DEBUG_APK_FILE" >> $GITHUB_ENV # 將 APK 文件路徑寫入環境變數
+                  echo "DEBUG_APK=$(basename $DEBUG_APK_FILE)" >> $GITHUB_ENV # 將 APK 文件名稱寫入環境變數
+                  cp $DEBUG_APK_FILE app-debug-unsigned.apk # 重命名 APK 文件，並且複製到根目錄
 
-      # 上傳工作流中的檔案到運行紀錄中，以便在 GitHub UI 中查看下載，或是在其他工作流程中使用
-      - name: Upload Artifact (Debug APK)
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.DEBUG_APK }} # 上傳的文件名稱
-          path: ${{ env.DEBUG_APK_PATH }} # 上傳的文件路徑
+                  ./gradlew assembleRelease # 執行 Gradle 構建命令
+                  ls -l app/build/outputs/apk/release/ # 列出 APK 文件
+                  RELEASE_APK_FILE=$(find 'app/build/outputs/apk/release/' -name '*.apk' | head -n 1)
+                  echo "RELEASE_APK_PATH=$RELEASE_APK_FILE" >> $GITHUB_ENV # 將 APK 文件路徑寫入環境變數
+                  echo "RELEASE_APK=$(basename $RELEASE_APK_FILE)" >> $GITHUB_ENV # 將 APK 文件名稱寫入環境變數
+                  cp $RELEASE_APK_FILE app-release-unsigned.apk # 重命名 APK 文件，並且複製到根目錄
 
-      - name: Upload Artifact (Release APK)
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.RELEASE_APK }} # 上傳的文件名稱
-          path: ${{ env.RELEASE_APK_PATH }} # 上傳的文件路徑
+            - name: Sign APK
+              run: |
+                  echo "${{ secrets.SIGNING_KEY }}" | base64 --decode > sign-key.keystore
 
-  Release: # 工作流程名稱
-    runs-on: ubuntu-latest # 運行工作流程的虛擬機器環境 (ubuntu-latest, macos-latest, windows-latest)
-    needs: build # 需要 build 工作流程執行完畢後才能執行
+                  cp app-debug-unsigned.apk app-debug-signed.apk # 複製 APK 文件，並且重命名
+                  jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore sign-key.keystore -storepass ${{ secrets.KEY_STORE_PASSWORD }} -keypass ${{ secrets.KEY_PASSWORD }} app-debug-signed.apk ${{ secrets.ALIAS }} # 簽名 APK 文件
 
-    steps:
-      # 將所有存在運行紀錄中的檔案下載到工作流程中
-      - name: Download All Artifacts (Debug APK, Release APK)
-        uses: actions/download-artifact@v4
-        with:
-          path: ${{ github.workspace }} # 下載的文件路徑
-          merge-multiple: true
+                  cp app-release-unsigned.apk app-release-signed.apk # 移動 APK 文件，並且重命名
+                  jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore sign-key.keystore -storepass ${{ secrets.KEY_STORE_PASSWORD }} -keypass ${{ secrets.KEY_PASSWORD }} app-release-signed.apk ${{ secrets.ALIAS }} # 簽名 APK 文件
+            - name: Verify APK
+              run: |
+                  jarsigner -verify -verbose -certs app-debug-signed.apk # 驗證 APK 文件
+                  jarsigner -verify -verbose -certs app-release-signed.apk # 驗證 APK 文件
+            - name: Align APK
+              run: |
+                  export PATH=$PATH:/usr/local/lib/android/sdk/build-tools/30.0.3/ # 將 build-tools 添加到 PATH 中以使用 zipalign 命令
+                  zipalign -v 4 app-debug-signed.apk app-debug-aligned.apk # 對齊 APK 文件
+                  zipalign -v 4 app-release-signed.apk app-release-aligned.apk # 對齊 APK 文件
+            - name: Display structure of files
+              run: ls -l # 列出文件
 
-      - name: Display structure of downloaded files
-        run: ls -R # 列出資料夾結構
+            # 上傳工作流中的檔案到運行紀錄中，以便在 GitHub UI 中查看下載，或是在其他工作流程中使用
+            - name: Upload Artifact (Debug APK)
+              uses: actions/upload-artifact@v4
+              with:
+                  name: app-debug-unsigned.apk # 上傳的文件名稱
+                  path: ./app-debug-unsigned.apk # 上傳的文件路徑
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: app-debug-signed.apk # 上傳的文件名稱
+                  path: ./app-debug-signed.apk # 上傳的文件路徑
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: app-debug-aligned.apk # 上傳的文件名稱
+                  path: ./app-debug-aligned.apk # 上傳的文件路徑
 
-      - name: Publish Release
-        # 當推送的標籤是以 refs/tags/v 開頭時執行
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: ncipollo/release-action@v1
-        with:
-          allowUpdates: true
-          artifacts: '*.apk' # 上傳的檔案
-          token: ${{ secrets.GITHUB_TOKEN }}
-          prerelease: false
-          draft: false
-          name: Release ${{ github.ref_name }} APK # 發布的名稱
-          body: |
-            Release ${{ github.ref_name }} APK
-          tag: ${{ github.ref_name }}
+            - name: Upload Artifact (Release APK)
+              uses: actions/upload-artifact@v4
+              with:
+                  name: app-release-unsigned.apk # 上傳的文件名稱
+                  path: ./app-release-unsigned.apk # 上傳的文件路徑
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: app-release-signed.apk # 上傳的文件名稱
+                  path: ./app-release-signed.apk # 上傳的文件路徑
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: app-release-aligned.apk # 上傳的文件名稱
+                  path: ./app-release-aligned.apk # 上傳的文件路徑
+
+    Release: # 工作流程名稱
+        runs-on: ubuntu-latest # 運行工作流程的虛擬機器環境 (ubuntu-latest, macos-latest, windows-latest)
+        needs: build # 需要 build 工作流程執行完畢後才能執行
+
+        steps:
+            # 將所有存在運行紀錄中的檔案下載到工作流程中
+            - name: Download All Artifacts (Debug APK, Release APK)
+              uses: actions/download-artifact@v4
+              with:
+                  path: ${{ github.workspace }} # 下載的文件路徑
+                  merge-multiple: true
+
+            - name: Display structure of downloaded files
+              run: ls -R # 列出資料夾結構
+
+            - name: Publish Release
+              # 當推送的標籤是以 refs/tags/v 開頭時執行
+              if: startsWith(github.ref, 'refs/tags/v')
+              uses: ncipollo/release-action@v1
+              with:
+                  allowUpdates: true
+                  artifacts: '*.apk' # 上傳的檔案
+                  token: ${{ secrets.GITHUB_TOKEN }}
+                  prerelease: false
+                  draft: false
+                  name: Release ${{ github.ref_name }} APK # 發布的名稱
+                  body: |
+                      Release ${{ github.ref_name }} APK
+                  tag: ${{ github.ref_name }}
