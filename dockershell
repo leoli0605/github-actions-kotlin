@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# Build Docker image
+docker build -t android-kotlin .
+
+# Run Docker container
+docker run -it --rm -v $(pwd):/app -w /app android-kotlin /bin/bash
