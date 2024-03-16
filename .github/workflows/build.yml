@@ -128,7 +128,7 @@ jobs: # 工作流程中的工作
                   name: Release ${{ github.ref_name }} APK
                   prerelease: false
                   tag: ${{ github.ref_name }}
-                  token: ${{ secrets.GITHUB_TOKEN }}
+                  token: ${{ secrets.PAT }}
 
             - name: Get the URL of the uploaded release
               if: steps.release.outputs.id != ''
