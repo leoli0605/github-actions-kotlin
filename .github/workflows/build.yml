@@ -119,6 +119,7 @@ jobs: # 工作流程中的工作
               # 當推送的標籤是以 refs/tags/v 開頭時執行
               if: startsWith(github.ref, 'refs/tags/v')
               uses: ncipollo/release-action@v1
+              id: release
               with:
                   allowUpdates: true
                   artifacts: '*.apk' # 上傳的檔案
@@ -129,3 +130,12 @@ jobs: # 工作流程中的工作
                   body: |
                       Release ${{ github.ref_name }} APK
                   tag: ${{ github.ref_name }}
+
+            - name: Get the URL of the uploaded release
+              if: steps.release.outputs.id != ''
+              run: |
+                  echo "The html_url is ${{ steps.release.outputs.html_url }}"
+                  echo ""
+                  echo "The upload_url is ${{ steps.release.outputs.upload_url }}"
+                  echo ""
+                  curl -IL https://github.com/leoli0605/github-actions-kotlin/releases/latest
