@@ -123,13 +123,12 @@ jobs: # 工作流程中的工作
               with:
                   allowUpdates: true
                   artifacts: '*.apk' # 上傳的檔案
-                  token: ${{ secrets.GITHUB_TOKEN }}
-                  prerelease: false
+                  body: Release ${{ github.ref_name }} APK
                   draft: false
-                  name: Release ${{ github.ref_name }} APK # 發布的名稱
-                  body: |
-                      Release ${{ github.ref_name }} APK
+                  name: Release ${{ github.ref_name }} APK
+                  prerelease: false
                   tag: ${{ github.ref_name }}
+                  token: ${{ secrets.GITHUB_TOKEN }}
 
             - name: Get the URL of the uploaded release
               if: steps.release.outputs.id != ''
